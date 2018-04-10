@@ -1,0 +1,14 @@
+{
+  "name": "proxy-protocol",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "mocha tests/units"
+  },
+  "author": "Mark Eschbach <meschbach@gmail.com>",
+  "license": "MIT",
+  "dependencies": {
+    "mocha": "4.0.1"
+  }
+}
