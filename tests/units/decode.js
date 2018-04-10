@@ -10,6 +10,7 @@ class InterpterFormatTestHandler {
 	connection(details) { return details; }
 }
 
+const MAGIC_BUFFER = Buffer.from([ 0x0D, 0x0A, 0x0D, 0x0A, 0x00, 0x0D, 0x0A, 0x51, 0x55, 0x49, 0x54, 0x0A ]);
 describe("interpret_format", function () {
 	describe("given a header too short", function () {
 		beforeEach(function () {
@@ -32,11 +33,13 @@ describe("interpret_format", function () {
 
 	describe("given a header with the right magic but no body", function () {
 		beforeEach(function () {
-			this.result = interpret_format(new Buffer([
-				0x0D, 0x0A, 0x0D, 0x0A, 0x00, 0x0D, 0x0A, 0x51, 0x55, 0x49, 0x54, 0x0A,
+			const data = Buffer.from([
 				VERSION_2 | CMD_PROXY,
 				FAMILY_TCPv4,
-				0, 12]), new InterpterFormatTestHandler());
+				0, 0])
+			data.writeUInt16BE(12, data.length - 2);
+			const example_buffer = Buffer.concat([MAGIC_BUFFER, data]);
+			this.result = interpret_format(example_buffer, new InterpterFormatTestHandler());
 		});
 
 		it("reports not enough bytes", function () {
