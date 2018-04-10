@@ -24,7 +24,6 @@ const VERSION_2 = 0x20;
 const FAMILY_TCPv4 = 0x11;
 const FAMILY_TCPv6 = 0x21;
 
-
 function interpret_format( buffer, handler, continueWithWrongMagic = false ) {
 	// Verify we have enough data
 	if( buffer.length < FORMAT_LENGTH ){ return handler.tooShort(buffer); }
@@ -65,6 +64,43 @@ function interpret_address( format, buffer ) {
 	}
 }
 
+//Result constants
+const PROXY_ERROR_TOO_SHORT = Symbol("PROXY_ERROR_TOO_SHORT");
+const PROXY_ERROR_BAD_MAGIC = Symbol("PROXY_ERROR_BAD_MAGIC");
+
+//TODO: Figure out how to make this better
+function consume_proxy_protocol( clientSocket, id, handler, logger ){
+	clientSocket.once('data', function( chunk ){
+		clientSocket.pause();
+
+		const format = interpret_format(chunk, {
+			tooShort: () => {
+				logger.trace( "Initial chunk to short", id );
+				handler({reason: PROXY_ERROR_TOO_SHORT, chunk}, null);
+				return null;
+			},
+			wrongMagic: () => {
+				logger.trace( "Wrong magic", id );
+				handler({reason: PROXY_ERROR_BAD_MAGIC, chunk}, null);
+				return null;
+			},
+			connection: ( header ) => {
+				logger.trace( "Successful connection", {id, header});
+				return header;
+			}
+		});
+		if( !format ) { return; }
+
+		const header_end = FORMAT_HEADER_LENGTH + format.header_length;
+		const addressBuffer = chunk.slice(FORMAT_HEADER_LENGTH, header_end);
+		const remainder = chunk.slice(header_end);
+
+		const address  = interpret_address( format, addressBuffer );
+		handler(null, {format, address, remainder});
+	});
+	if( clientSocket.isPaused() ) { clientSocket.resume(); }
+}
+
 
 module.exports = {
 	MAGIC,
@@ -78,5 +114,9 @@ module.exports = {
 	FAMILY_TCPv6,
 
 	interpret_format,
-	interpret_address
+	interpret_address,
+
+	PROXY_ERROR_TOO_SHORT,
+	PROXY_ERROR_BAD_MAGIC,
+	consume_proxy_protocol
 };
