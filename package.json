@@ -1,8 +1,8 @@
 {
-  "name": "proxy-protocol",
+  "name": "ha-proxy-protocol",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "proxy-protocol-v2.js",
   "scripts": {
     "test": "mocha tests/units"
   },
